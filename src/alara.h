@@ -16,6 +16,10 @@
 #include <algorithm>
 #include <string>
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 /* *** STL typedef ***
 
  DataCache : map<int,double,less<int> >
@@ -83,6 +87,7 @@ extern const char* SYMBOLS;
 
 extern int verb_level;
 extern int debug_level;
+extern int num_threads;
 
 // Avagadros number
 #define AVAGADRO 6.02e23

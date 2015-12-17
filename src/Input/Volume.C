@@ -23,6 +23,9 @@ TempLibType Volume::specLib;
 TempLibType Volume::rangeLib;
 int* Volume::energyRel = NULL;
 
+// Default number of threads for OMP
+int num_threads = 2;
+
 /***************************
  ********* Service *********
  **************************/
@@ -489,24 +492,38 @@ void Volume::solve(Chain* chain, topSchedule* schedule)
 {
   Volume* ptr= this;
   
+#ifdef _OPENMP
+  omp_set_num_threads(num_threads);
+#endif
+
+#pragma omp parallel
+#pragma omp single nowait
   while (ptr->mixNext != NULL)
     {
       ptr = ptr->mixNext;
 
-      /* make copy of chain to allow for parallelization across volumes */
-      Chain *tmpChain = new Chain(*chain);
-      topSchedule *tmpSched = new topSchedule(*schedule);
-
-      /* collapse the rates with the flux */
-      tmpChain->collapseRates(ptr->fluxHead);
-      /* solve the schedule */
-      tmpSched->setT(tmpChain,ptr->schedT);
-      /* tally results */
-      ptr->results.tallySoln(tmpChain,ptr->schedT);
-      delete tmpChain;
-      delete tmpSched;
-
-    }  
+#pragma omp task
+      {
+        /* make copy of chain to allow for parallelization across volumes */
+#ifdef _OPENMP
+        Chain *tmpChain = new Chain(*chain);
+        topSchedule *tmpSched = new topSchedule(*schedule);
+#else
+        Chain *tmpChain = chain;
+        topSchedule *tmpSched = schedule;
+#endif
+        /* collapse the rates with the flux */
+        tmpChain->collapseRates(ptr->fluxHead);
+        /* solve the schedule */
+        tmpSched->setT(tmpChain,ptr->schedT);
+        /* tally results */
+        ptr->results.tallySoln(tmpChain,ptr->schedT);
+#ifdef _OPENMP
+        delete tmpChain;
+        delete tmpSched;
+#endif
+      }
+    }
 }
 
 /** It calls writeDump() for each interval in the mixture's list of
