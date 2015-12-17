@@ -90,32 +90,7 @@ topSchedule& topSchedule::operator=(const topSchedule& t)
   if (this == &t)
     return *this;
 
-  /**** BEGIN copied directly from calcSchedule.C ***/
-  setCode = t.setCode;
-  
-  delay = t.delay;
-  D = t.D;
-  history = t.history;
-
-  opTime = t.opTime;
-  fluxCode = t.fluxCode;
-  
-  while (nItems-->0)
-    delete subSched[nItems];
-  delete subSched;
-  subSched=NULL;
-
-  nItems = t.nItems;
-
-  if (nItems>0)
-    {  
-      subSched = new calcSchedule*[nItems];
-      memCheck(subSched,"calcSchedule::operator=(...): subSched");
-      
-      for (int itemNum=0;itemNum<nItems;itemNum++)
-	subSched[itemNum] = t.subSched[itemNum];
-    }
-  /**** END copied directly from calcSchedule.C ***/
+  calcSchedule::operator= (t);
 
   delete coolingTime;
   delete [] coolD;
