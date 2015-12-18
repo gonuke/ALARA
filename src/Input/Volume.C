@@ -492,17 +492,20 @@ void Volume::solve(Chain* chain, topSchedule* schedule)
 {
   Volume* ptr= this;
   
+  int volcnt[8] = {0,0,0,0,0,0,0,0};
+
 #ifdef _OPENMP
   omp_set_num_threads(num_threads);
 #endif
 
 #pragma omp parallel
 #pragma omp single nowait
+  {
   while (ptr->mixNext != NULL)
     {
       ptr = ptr->mixNext;
 
-#pragma omp task
+#pragma omp task firstprivate(ptr) 
       {
         /* make copy of chain to allow for parallelization across volumes */
 #ifdef _OPENMP
@@ -518,12 +521,18 @@ void Volume::solve(Chain* chain, topSchedule* schedule)
         tmpSched->setT(tmpChain,ptr->schedT);
         /* tally results */
         ptr->results.tallySoln(tmpChain,ptr->schedT);
+        volcnt[omp_get_thread_num()]++;
 #ifdef _OPENMP
         delete tmpChain;
         delete tmpSched;
 #endif
       }
     }
+  }
+  //  for (int t=0;t<8;t++)
+  // std::cerr << "\t" << volcnt[t];
+  //std::cerr << std::endl;
+
 }
 
 /** It calls writeDump() for each interval in the mixture's list of
