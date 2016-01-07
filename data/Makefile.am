@@ -4,7 +4,7 @@ include $(top_srcdir)/Makefile.h
 
 
 # fill in final data files here
-dist_nonxs_DATA = ANS6_4_3.txt Data_list.txt elelib.std matlib.sample			\
+dist_nonxs_DATA = ANS6_4_3.txt Data_list.txt elelib.std nuclib.std matlib.sample    \
           FetterC_hi.Ci_m3.wdr	FetterC_lo.Ci_m3.wdr NRCA.Ci_m3.wdr NRCC.Ci_m3.wdr	\
           IAEA.clearance.old.Bq_kg NRC.clearance.old.Bq_kg EU.clearance.old.Bq_kg	\
           EU.clearance.2000.Bq_kg IAEA.clearance.2004.Bq_kg                             \
@@ -16,6 +16,7 @@ dist_nonxs_DATA = ANS6_4_3.txt Data_list.txt elelib.std matlib.sample			\
 install-data-hook:
 	cd $(nonxsdir); \
 	rm -f elelib_std; ln -sf elelib.std elelib_std; \
+	rm -f nuclib_std; ln -sf nuclib.std nuclib_std; \
 	rm -f ANS6.4.3; ln -sf ANS6_4_3.txt ANS6.4.3; \
 	rm -f ANS6_4_3; ln -sf ANS6_4_3.txt ANS6_4_3; \
 	rm -f FetterHi; ln -sf FetterC_hi.Ci_m3.wdr FetterHi; \
