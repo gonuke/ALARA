@@ -37,26 +37,22 @@ ALARA is written primarily in C++ with one or two FORTRAN77 routines. All develo
 
 Process
 _______
-1. Obtain the distribution from the appropriate source.
-2. Unpack the distribution.
 
-	%> gunzip -c alara-2.7.1.tar.gz | tar xf -
+1. Generate ALARA configuration script
 
-3. Go to newly created directory.
+    %> autoreconf -fi
 
-	%> cd alara-2.7.1
-
-4. Configure ALARA for your system
+1. Configure ALARA for your system
 
 	%> ./configure
 
    See below for options that you can give to configure.
 
-5. Build the application
+2. Build the application
 
 	%> make
 
-6. Install the application
+3. Install the application
 
 	%> make install
 
