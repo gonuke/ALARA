@@ -153,7 +153,7 @@ Schedule* Schedule::getSchedule(istream& input)
 /** This function sets up the cross-check by looping through the
     schedules, and passing the 2 arguments (the head of the Flux list
     and the head of the History list) on to the list of ScheduleItems. */
-void Schedule::xCheck(Flux *fluxHead, History *histHead)
+void Schedule::xCheck(std::vector<Flux*> fluxList, History *histHead)
 {
   Schedule *head=this;
   Schedule *ptr=this;
@@ -164,7 +164,7 @@ void Schedule::xCheck(Flux *fluxHead, History *histHead)
     {
       ptr=ptr->next;
       debug(2,"Checking schedule %s (%x)",ptr->schedName,ptr);
-      ptr->itemListHead->xCheck(head,fluxHead,histHead,ptr->schedName);
+      ptr->itemListHead->xCheck(head,fluxList,histHead,ptr->schedName);
     }
 
   verbose(3,"All sub-schedules, fluxes and pulsing histories referenced in schedules were found.");

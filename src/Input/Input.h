@@ -1,6 +1,8 @@
 /* $Id: Input.h,v 1.7 2003-01-13 04:34:57 fateneja Exp $ */
 #include "alara.h"
 
+#include <vector>
+
 #ifndef INPUT_H
 #define INPUT_H
 
@@ -67,11 +69,8 @@ protected:
   /// The mixture defintion most recently added to the list.
   Mixture *mixList;
 
-  /// The head of the linked list of flux definitions for this problem.
-  Flux *fluxListHead;
-    
   /// The flux definition most recently added to the list.
-  Flux *fluxList;
+  std::vector<Flux*> fluxList;
   
   /// The head of the linked list of pulsing history definitions for
   /// this problem.

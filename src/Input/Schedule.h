@@ -1,6 +1,8 @@
 /* $Id: Schedule.h,v 1.5 2003-01-13 04:34:59 fateneja Exp $ */
 #include "alara.h"
 
+#include <vector>
+
 #ifndef SCHEDULE_H
 #define SCHEDULE_H
 
@@ -67,7 +69,7 @@ public:
 
   /// Cross-check that the fluxes and histories referenced in the
   /// schedule items exists.
-  void xCheck(Flux*,History*);
+  void xCheck(std::vector<Flux*>,History*);
 
   /// This function ouputs the hierarchical schedule structure to STDOUT.
   void write(int level=0, char *histName = NULL, double delay=0, char dUnits=' ');

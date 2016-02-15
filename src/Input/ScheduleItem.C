@@ -126,7 +126,7 @@ ScheduleItem* ScheduleItem::getPulse(double inOpTime,istream& input)
     pointer in the union.  The arguments are the head items of the lists
     of Schedule, Flux and History, respectively, followed by the name of
     the current schedule, for use in error reporting. */
-void ScheduleItem::xCheck(Schedule* schedHead, Flux *fluxHead, History *histHead, char *schedName)
+void ScheduleItem::xCheck(Schedule* schedHead, std::vector<Flux*> fluxList, History *histHead, char *schedName)
 {
   ScheduleItem *ptr=this;
 
@@ -142,7 +142,7 @@ void ScheduleItem::xCheck(Schedule* schedHead, Flux *fluxHead, History *histHead
 	    verbose(4,"Checking for flux %s and pulsing history %s in single pulse item.",
 		    ptr->fluxName, ptr->pulseName);
 	    /* set ordinal flux number */
-	    int tmpFlux = fluxHead->find(ptr->fluxName);
+	    int tmpFlux = Flux::find(fluxList,ptr->fluxName);
 	    /* check that flux is valid */
 	    switch (tmpFlux)
 	      {

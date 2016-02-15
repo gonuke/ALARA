@@ -45,53 +45,45 @@ protected:
   /// The descriptive name of this flux description.
   /** This will be used primarily to cross-reference this flux 
       description with the schedules. */
-  char *fluxName;
+  std::string fluxName;
     
   /// The filename where these flux spectra should be read.
-  char *fileName;
+  std::string fileName;
 
-  /// The pointer to the next flux description in the list.
-  Flux* next;
 
 public:
   /// Default constructor
-  Flux(int inFormat=FLUX_HEAD, const char* flxName=NULL, 
-       const char* fName=NULL, double Scale=0, 
-       int inSkip=0);
+  Flux(int inFormat=FLUX_HEAD, int inSkip=0, double Scale=0, 
+       const std::string flxName="", const std::string fName="");
 
   /// Copy constructor
   Flux(const Flux&);
 
+  /// Constructor to make a new Flux object from the input file.
+  Flux(istream&);
+
   /// Inline destructor 
   /** Deletes storage for the flux identifier and the flux file name.
       The whole list is destroyed by deleting the next pointer. */
-  ~Flux()
-    { delete fileName; delete fluxName; delete next; };
 
   /// Overloaded assignment operator
   Flux& operator=(const Flux&);
-
-  /// Function to read the flux description from the input file
-  /// connected to the stream given in the first argument.
-  Flux* getFlux(istream&);
 
   /// Function to read RTFLUX binary FORTRAN output from DANTSYS, etc.
   void readRTFLUX(double*, int, int);
 
   /// Setup the problem to read the actual flux data into containers in each
   /// interval.
-  void xRef(Volume*);
+  static void xRef(std::vector<Flux*>, Volume*);
   
   /// Find a specific flux description based on the flux identifier give
   /// as the argument.
-  int find(char*);
+  static int find(std::vector<Flux*>, std::string);
 
   /// Check that the filename specified in the description is useful by
   /// openning and closing again.
   int checkFname();
 
-  /// Count the number of flux descriptions in the list.
-  int count();
 };
 
 

@@ -1,5 +1,6 @@
 /* $Id: ScheduleItem.h,v 1.5 2003-01-13 04:34:59 fateneja Exp $ */
 #include "alara.h"
+#include <vector>
 
 #ifndef SCHEDULEITEM_H
 #define SCHEDULEITEM_H
@@ -96,7 +97,7 @@ public:
 
   /// This function confirms the existence of all cross-referenced
   /// objects.  
-  void xCheck(Schedule*,Flux*,History*,char*);
+  void xCheck(Schedule*,std::vector<Flux*>,History*,char*);
 
   /// This function writes info about the current item to stdout 
   void write(int);

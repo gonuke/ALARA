@@ -10,6 +10,8 @@
  * Utility: advanced member access such as searching and counting 
  */
 
+#include <vector>
+
 #include "Flux.h"
 #define SWAP_2(x) ( (((x) & 0xff) << 8) | ((unsigned short)(x) >> 8) )
 #define SWAP_4(x) ( ((x) << 24) | (((x) << 8) & 0x00ff0000) | \
@@ -29,54 +31,9 @@
     are given.  Otherwise, it sets the format, flux identifier, flux
     file name, scaling factor, and skip value, with arguments given in
     that order. */
-Flux::Flux(int inFormat, const char *flxName, const char *fName, 
-	   double inScale, int inSkip) :
-  format(inFormat),  skip(inSkip), scale(inScale)
-{
-  fluxName = NULL;
-  fileName = NULL;
-
-  if (flxName != NULL)
-    {
-      fluxName = new char[strlen(flxName)+1];
-      memCheck(fluxName,"Flux::Flux(...) constructor: fluxName");
-      strcpy(fluxName,flxName);
-    }
-
-  if (fName != NULL)
-    {
-      fileName = new char[strlen(fName)+1];
-      memCheck(fileName,"Flux::Flux(...) constructor: fileName");
-      strcpy(fileName,fName);
-    }
-
-  next = NULL;
-}
-
-/** This constructor initializes 'scale', 'skip' and 'format' and then
-    creates and fills storage for 'fluxName' and 'fileName'. */
-Flux::Flux(const Flux& f) :
-  format(f.format),  skip(f.skip), scale(f.scale)
-{
-  fluxName = NULL;
-  fileName = NULL;
-
-  if (f.fluxName != NULL)
-    {
-      fluxName = new char[strlen(f.fluxName)+1];
-      memCheck(fluxName,"Flux::Flux() copy constructor: fluxName");
-      strcpy(fluxName,f.fluxName);
-    }
-
-  if (f.fileName != NULL)
-    {
-      fileName = new char[strlen(f.fileName)+1];
-      memCheck(fileName,"Flux::Flux() copy constructor: fileName");
-      strcpy(fileName,f.fileName);
-    }
-  
-  next = NULL;
-}
+Flux::Flux(int inFormat, int inSkip, double inScale, const std::string flxName, const std::string fName) :
+  format(inFormat), skip(inSkip), scale(inScale), fluxName(flxName), fileName(fName)
+{}
 
 /** This assignmnet operator behaves similarly to the copy                        constructor. The correct implementation of this operator must ensure
     that previously allocated space is returned to the free store before          allocating new space into which to copy the object.  It does NOT              copy 'next'. */
@@ -88,27 +45,8 @@ Flux& Flux::operator=(const Flux& f)
   scale = f.scale;
   skip = f.skip;
   format = f.format;
-
-  delete fluxName;
-  delete fileName;
-
-  fluxName = NULL;
-  fileName = NULL;
-
-  if (f.fluxName != NULL)
-    {
-      fluxName = new char[strlen(f.fluxName)+1];
-      memCheck(fluxName,"Flux::operator=(...) : fluxName");
-      strcpy(fluxName,f.fluxName);
-    }
-
-  if (f.fileName != NULL)
-    {
-      fileName = new char[strlen(f.fileName)+1];
-      memCheck(fileName,"Flux::operator=(...) : fileName");
-      strcpy(fileName,f.fileName);
-    }
-  
+  fluxName = f.fluxName;
+  fileName = f.fileName;
 
   return *this;
 
@@ -121,36 +59,28 @@ Flux& Flux::operator=(const Flux& f)
 /* called by Input::read(...) */
 /** It returns a pointer to the new object of class Flux which has just
     been created.  It does NOT read the actual flux information from              the file. */
-Flux* Flux::getFlux(istream& input)
+Flux::Flux(istream& input)
 {
-  char flxName[256], fName[256], type[16];
-  double inScale;
-  int inSkip, inFormat;
+  std::string type;
+  
+  input >> fluxName >> fileName >> scale >> skip >> type;
 
-  input >>flxName >> fName >> inScale >> inSkip >> type;
   switch(tolower(type[0]))
     {
     
     case 'r':
       // binary format (read from binary file)
-      inFormat = FLUX_R;
+      format = FLUX_R;
       break;
     
     case 'd':
       // default format (read from text file)
-      inFormat = FLUX_D;
+      format = FLUX_D;
       break;
     default:
-      error(140,"Invalid flux type: %s", type);
+      error(140,"Invalid flux type: %s", type.c_str());
     }
-  next = new Flux(inFormat,flxName,fName,inScale,inSkip);
-  memCheck(next,"Flux::getFlux(...): next");
 
-  verbose(2,"Added Flux %s from file %s with normalization %g,\
- format code %d, and skipping %d entries.", 
-	  flxName,fName,inScale,inFormat,inSkip);
-
-  return next;
 }
 
 /****************************
@@ -162,16 +92,16 @@ Flux* Flux::getFlux(istream& input)
 /* called by Input::preproc(...) */
 /** The function expects a pointer to an object of class Volume which
     should be the head of the global interval list. */
-void Flux::xRef(Volume *volList)
+void Flux::xRef(std::vector<Flux*> fluxList, Volume *volList)
 {
-  Flux *ptr = this;
+
   int numVols = volList->count();
   int numGrps = VolFlux::getNumGroups();
   double temp;
 
-  VolFlux::setNumFluxes(count());
+  VolFlux::setNumFluxes(fluxList.size());
 
-  verbose(2,"Assigning %d fluxes to each interval",count());
+  verbose(2,"Assigning %d fluxes to each interval",fluxList.size());
 
   // Dynamically Create Matrix
   double **FluxMatrix = new double*[numVols];
@@ -181,60 +111,61 @@ void Flux::xRef(Volume *volList)
     FluxMatrix[i] = &MatrixStorage[i*numGrps];
 
   /* for each flux definition */
-  while (ptr->next != NULL)
+  for ( std::vector<Flux*>::iterator ptr = fluxList.begin();
+        ptr != fluxList.end();
+        ptr++)
     {
-      ptr = ptr->next;
-      verbose(3,"Assigning flux %s",ptr->fluxName);
+      verbose(3,"Assigning flux %s",(*ptr)->fluxName.c_str());
 
-      switch (ptr->format)
-	{
-	case FLUX_D:
-	  {
-	    /* Default: Reads data from fluxin file */
+      switch ((*ptr)->format)
+        {
+        case FLUX_D:
+          {
+            /* Default: Reads data from fluxin file */
 
-	    // Open Input File
-	    ifstream FluxData(ptr->fileName);
+            // Open Input File
+            ifstream FluxData((*ptr)->fileName.c_str());
 
-	    // Skip appropriate number of Volumes
-	    if(ptr->skip > 0)
-	      for(int i = 0; i < ptr->skip; i++)
-		for(int j = 0; j < numGrps; j++)
-		  FluxData >> temp;
+            // Skip appropriate number of Volumes
+            if((*ptr)->skip > 0)
+              for(int i = 0; i < (*ptr)->skip; i++)
+                for(int j = 0; j < numGrps; j++)
+                  FluxData >> temp;
 
-	    if(FluxData.eof())
-	      error(622,"Flux file %s does not contain enough data.",
-		    ptr->fileName);
+            if(FluxData.eof())
+              error(622,"Flux file %s does not contain enough data.",
+                    (*ptr)->fileName.c_str());
 
-	    // Load data from FluxData
-	    for(int x = 0; x < numVols; x++)
-	    {
-	      for(int y = 0; y < numGrps; y++)
-	      {
-		if(FluxData.eof())
-		  error(622,"Flux file %s does not contain enough data.",
-			ptr->fileName);
+            // Load data from FluxData
+            for(int x = 0; x < numVols; x++)
+              {
+                for(int y = 0; y < numGrps; y++)
+                  {
+                    if(FluxData.eof())
+                      error(622,"Flux file %s does not contain enough data.",
+                            (*ptr)->fileName.c_str());
 
-		FluxData >> FluxMatrix[x][y];
-	      }
-	    }
-	    FluxData.close();
-	    break;
-	  }
+                    FluxData >> FluxMatrix[x][y];
+                  }
+              }
+            FluxData.close();
+            break;
+          }
 
-	case FLUX_R:
-	  {
-	    ptr->readRTFLUX(MatrixStorage,numVols,numGrps);
-	    
-	    break;
-	  }
-	};
+        case FLUX_R:
+          {
+            (*ptr)->readRTFLUX(MatrixStorage,numVols,numGrps);
+            
+            break;
+          }
+        };
       
-      volList->storeMatrix(FluxMatrix,ptr->scale);
+      volList->storeMatrix(FluxMatrix,(*ptr)->scale);
     }
-
+  
   delete[] FluxMatrix; // FIXME: internal arrays not deleted?
 
-  verbose(3,"Assigned %d fluxes to each interval",count());
+  verbose(3,"Assigned %d fluxes to each interval",fluxList.size());
 
 }
 
@@ -242,7 +173,7 @@ void Flux::xRef(Volume *volList)
 void Flux::readRTFLUX(double *MatrixStorage,int numVols, int numGrps)
 {
  
-  FILE* binFile = fopen(fileName,"rb");
+  FILE* binFile = fopen(fileName.c_str(),"rb");
 
   int f77_reclen; /// needed to accommodate strange F77 binary strucutre
   int readInt;
@@ -280,13 +211,13 @@ void Flux::readRTFLUX(double *MatrixStorage,int numVols, int numGrps)
 
   /// error checking
   if (ndim > 1)
-    error(624,"RFLUX file: %s is 2- or 3-dimensional.  This feature currently only supports 1-D.",fileName);
+    error(624,"RFLUX file: %s is 2- or 3-dimensional.  This feature currently only supports 1-D.",fileName.c_str());
 
   if (ngrp<numGrps)
-    error(623,"RTFLUX file: %s does not contain enough data - not enough groups", fileName);
+    error(623,"RTFLUX file: %s does not contain enough data - not enough groups", fileName.c_str());
 
   if (ninti<(skip+numVols))
-    error(623,"RTFLUX file: %s does not contain enough data - not enough intervals", fileName);
+    error(623,"RTFLUX file: %s does not contain enough data - not enough intervals", fileName.c_str());
 
   /// read blocks (1-D)
   double* fluxIn = new double[ninti*ngrp];
@@ -323,55 +254,38 @@ void Flux::readRTFLUX(double *MatrixStorage,int numVols, int numGrps)
 /** Returns the 0-based ordinal number of the flux in the list.
     Special values (< 0) are returned for special cases, such as bad
     file names or unfound flux descriptions. */
-int Flux::find(char *srchFlux)
+int Flux::find(std::vector<Flux*> fluxList, const std::string srchFlux)
 {
-  Flux *ptr=this;
-  int fluxNum = 0;
-
-  while (ptr->next != NULL)
+  for ( std::vector<Flux*>::iterator ptr = fluxList.begin();
+        ptr != fluxList.end();
+        ptr++)
     {
-      ptr = ptr->next;
-      fluxNum++;
-      if (!strcmp(ptr->fluxName,srchFlux))
-	{
-	if (ptr->checkFname())
-	  return fluxNum-1;
-	else
-	  return FLUX_BAD_FNAME;
-	}
+      if (!(*ptr)->fluxName.compare(srchFlux))
+        {
+          if ((*ptr)->checkFname())
+            return ptr-fluxList.begin();
+          else
+            return FLUX_BAD_FNAME;
+        }
     }
-
+  
   return FLUX_NOT_FOUND;
 }
 
 int Flux::checkFname()
 {
-  FILE* textFile = fopen(fileName,"r");
+  FILE* textFile = fopen(fileName.c_str(),"r");
 
   if (textFile != NULL)
     {
-      verbose(5,"Openned flux file %s.",fileName);
+      verbose(5,"Openned flux file %s.",fileName.c_str());
       fclose(textFile);
       return TRUE;
     }
   else
     {
-      warning(340,"Unable to open flux file %s for flux %s.",fileName,fluxName);
+      warning(340,"Unable to open flux file %s for flux %s.",fileName.c_str(),fluxName.c_str());
       return FALSE;
     }
  
-}
-
-int Flux::count()
-{
-  Flux *ptr=this;
-  int fluxNum = 0;
-
-  while (ptr->next != NULL)
-    {
-      ptr = ptr->next;
-      fluxNum++;
-    }
-
-  return fluxNum;
 }

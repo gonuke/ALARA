@@ -10,6 +10,7 @@
  * Utility: advanced member access such as searching and counting 
  */
 
+#include <vector>
 
 #include "Input.h"
 #include "CoolingTime.h"
@@ -73,10 +74,6 @@ Input::Input(char* inputFname)
   memCheck(mixListHead,"Input::Input() constructor: mixListHead");
   mixList = mixListHead;
 
-  fluxListHead = new Flux(FLUX_HEAD);
-  memCheck(fluxListHead,"Input::Input() constructor: fluxListHead");
-  fluxList = fluxListHead;
-
   historyListHead = new History(IN_HEAD);
   memCheck(historyListHead,"Input::Input() constructor: historyListHead");
   historyList = historyListHead;
@@ -118,7 +115,6 @@ Input::~Input()
 {
   delete inGeom;
   delete mixListHead;
-  delete fluxListHead;
   delete historyListHead;
   delete schedListHead;
   delete dimListHead;
@@ -171,7 +167,7 @@ void Input::read()
 		  break;
 		case INTOK_FLUX:
 		  debug(1,"Creating new Flux object.");
-		  fluxList = fluxList->getFlux(*input);
+		  fluxList.push_back(new Flux(*input));
 		  break;
 		case INTOK_PULSE:
 		  debug(1,"Creating new History object.");
@@ -365,7 +361,7 @@ Those extra zones are being ignored.",loadList->numZones(),dimListHead->totZones
    * - for all items of type sub-schedule, make sure named schedule exists
    * - for all items of type pulse, make sure named flux exists
    * - for all items, make sure named pulse history exists */
-  schedListHead->xCheck(fluxListHead,historyListHead);
+  schedListHead->xCheck(fluxList,historyListHead);
 
   /* write the schedule hierarchy for the user to check */
   schedListHead->write();
@@ -402,7 +398,7 @@ void Input::preProc(Root*& rootList, topSchedule*& top)
     volList->xRef(normList);
 
   /* fill volList with flux data */
-  fluxListHead->xRef(volList);
+  Flux::xRef(fluxList,volList);
 
   /* make a root list */
   mixListHead->makeRootList(rootList);
@@ -421,9 +417,6 @@ void Input::preProc(Root*& rootList, topSchedule*& top)
   /* make schedule T storage */
   volList->makeSchedTs(top);
 
-  // Add New function
-//   if(VolFlux::getNumCP())
-//     volList->makeXFlux(mixListHead);
 }
 
 
