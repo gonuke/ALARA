@@ -25,36 +25,10 @@ ifstream Component::eleLib;
 /** This constructor creates a blank list head, when no arguments
     are given.  Otherwise, it sets the type, the name and the density.
     The 'next' element is initialized to NULL. */
-Component::Component(int compType, char *name, double dens, double volFrac) :
-  type(compType),density(dens), volFraction(volFrac)
-{
-  compName = NULL;
-  if (name != NULL)
-    {
-      compName = new char[strlen(name)+1];
-      memCheck(compName,"Component::Component(...) constructor: compName");
-      strcpy(compName,name);
-    }
+Component::Component(int compType, std::string name, double dens, double volFrac) :
+  type(compType),compName(name),density(dens), volFraction(volFrac)
+{}
 
-  next = NULL;
-}
-
-/** This constructor initializes 'type', 'density', and 'volFraction'
-    and then creates and fills space for 'compName'. 'next' is NULL */
-Component::Component(const Component& comp) :
-  type(comp.type), density(comp.density), volFraction(comp.volFraction)
-{ 
-  compName = NULL;
-  if (comp.compName != NULL)
-    {
-      compName = new char[strlen(comp.compName)+1];
-      memCheck(compName,"Component::Component(...) copy constructor: compName");
-      strcpy(compName,comp.compName);
-    }
-
-  next = NULL;
-
-}
 
 /** The assignment operator is similar to the copy constructor, but it
     uses an already allocated object on the left hand side.  The
@@ -65,22 +39,13 @@ Component::Component(const Component& comp) :
     be part of the same list unless explicitly changed. */
 Component& Component::operator=(const Component& comp)
 { 
-  if (this == &comp)
-    return *this;
-
-  type = comp.type;
-  density = comp.density;
-  volFraction = comp.volFraction;
-
-  delete[] compName;
-  compName = NULL;
-  if (comp.compName != NULL)
+  if (this != &comp)
     {
-      compName = new char[strlen(comp.compName)+1];
-      memCheck(compName,"Component::operator(...) constructor: compName");
-      strcpy(compName,comp.compName);
+      type = comp.type;
+      compName = comp.compName;
+      density = comp.density;
+      volFraction = comp.volFraction;
     }
-
 
   return *this;
 
@@ -98,7 +63,7 @@ Component& Component::operator=(const Component& comp)
 Component* Component::getComponent(int setType,istream &input, Mixture *mixPtr)
 {
 
-  char name[64];
+  std::string name;
   double dens=0, volFrac=0;
 
   input >> name;
@@ -119,29 +84,30 @@ Component* Component::getComponent(int setType,istream &input, Mixture *mixPtr)
 
 }
 
-void Component::getMatLib(istream& input)
+void Component::getMatlib(istream& input)
 {
-  char fname[256];
+  std::string fname;
   input >> fname;
-  matLib.open(searchNonXSPath(fname));
+  matLib.open(searchNonXSPath(fname.c_str()));
 
   if (matLib == 0)
-    error(110,"Unable to open material library: %s",fname);
+    error(110,"Unable to open material library: %s",fname.c_str());
 
-  verbose(2,"Openned material library %s",searchNonXSPath(fname));
+  verbose(2,"Openned material library %s",searchNonXSPath(fname.c_str()));
 }
 
 void Component::getEleLib(istream& input)
 {
-  char fname[256];
+  std::string fname;
   input >> fname;
-  eleLib.open(searchNonXSPath(fname),ios::in);
+  eleLib.open(searchNonXSPath(fname.c_str()));
 
   if (eleLib == 0)
-    error(111,"Unable to open element library: %s",fname);
+    error(110,"Unable to open element library: %s",fname.c_str());
 
-  verbose(2,"Openned element library %s",searchNonXSPath(fname));
+  verbose(2,"Openned element library %s",searchNonXSPath(fname.c_str()));
 }
+
 
 /****************************
  ********* Preproc **********

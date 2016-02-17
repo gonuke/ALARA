@@ -56,7 +56,7 @@ class Component
         and 'ddd' the mass number.
       For similar components, this must match an entry in the list
         of mixtures read from the input file. */
-  char *compName;
+  std::string compName;
   
   /// This is the pointer to the next component in this mixture's list.
   Component* next;
@@ -81,7 +81,7 @@ public:
   static void getEleLib(istream&);
 
   /// Default constructor
-  Component(int compType=COMP_HEAD, char* name=NULL,double dens=0, 
+  Component(int compType=COMP_HEAD, std::string name="",double dens=0, 
 	    double volFrac=1);
 
   /// Copy constructor
@@ -115,7 +115,7 @@ public:
   int head() {return (type == COMP_HEAD);};
 
   /// Inline function providing access to the name of the component.
-  char *getName() {return compName;};
+  std::string getName() {return compName;};
 
   /// Inline function providing access to the volume fraction of this
   /// component.
