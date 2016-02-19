@@ -128,7 +128,7 @@ public:
   /// Constructor invokes Node(char*) constructor with first argument,
   /// initializes 'mixList' by creating a new MixCompRef object with
   /// MixCompRef(Mixture*,Component*,double), and sets 'next' to NULL.
-  Root(char*,double,Mixture*,Component*);
+  Root(const char*,double,Mixture*,Component*);
 
   /// Inline destructor 
   /** Has no special actions. It does NOT delete the list of Root isotopes. */

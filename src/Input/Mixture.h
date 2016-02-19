@@ -187,7 +187,7 @@ public:
 
   /// Function to search for a specific Mixture based on its descriptive
   /// name.
-  Mixture* find(char*);
+  Mixture* find(const char*);
 
   /// Inline function returns a count of the number of components.
   int getNComps() { return nComps; };

@@ -1,6 +1,10 @@
 /* $Id: Component.h,v 1.14 2003-01-13 04:34:54 fateneja Exp $ */
 #include "alara.h"
 
+#include <vector>
+#include <map>
+#include <string>
+
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
@@ -32,7 +36,14 @@ class Component
   
   /// This a stream connected to the element library as given in the
   /// input file.
-  static ifstream eleLib;
+  class EleLibEntry {
+  public:
+    int Z, numIsos;
+    double A, density;
+    std::vector<std::pair<std::string,double> > isoList;
+  };
+
+  static std::map<std::string, EleLibEntry> eleLib;
   
   /// This indicates the type of this component and is based on the
   /// definitions given below.
@@ -84,13 +95,10 @@ public:
   Component(int compType=COMP_HEAD, std::string name="",double dens=0, 
 	    double volFrac=1);
 
-  /// Copy constructor
-  Component(const Component&);
-
   /// Inline destructor destroys *entire* chain by deleting 'next'.
   /// Also deletes storage for 'compName'.
   ~Component()
-    { delete[] compName; delete next; };
+    {  delete next; };
   
   /// Overloaded assignment operator
   Component& operator=(const Component&);

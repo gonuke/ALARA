@@ -280,9 +280,9 @@ void Mixture::xCheck()
       while(current != NULL)
 	{
 	  /* search for the referenced name */
-	  if (head->find(current->getName()) == NULL)
+	  if (head->find(current->getName().c_str()) == NULL)
 	      error(380, "Constituent type 'l' of mixture %s references a non-existent mixture: %s",
-		      ptr->mixName,current->getName());
+                ptr->mixName,current->getName().c_str());
 
 	  current = current->exists(COMP_SIM);
 	}
@@ -351,7 +351,7 @@ void Mixture::copySim(Mixture *cpyPtr)
       while (current != NULL)
 	{
 	  /* if this component is similar to mixture of interest */
-	  if (!strcmp(cpyPtr->mixName,current->getName()))
+	  if (!strcmp(cpyPtr->mixName,current->getName().c_str()))
 	    {
 	      /* replace the similar component */
 	      current = current->replaceSim(cpyPtr->compListHead);
@@ -768,7 +768,7 @@ int Mixture::getCompNum(Component* compPtr)
 
 /** The name is passed as the only argument.  If found, a pointer to the
     appropriate Mixture object is returned, otherwise, NULL. */
-Mixture* Mixture::find(char* srchName)
+Mixture* Mixture::find(const char* srchName)
 {
 
   Mixture *ptr = this;

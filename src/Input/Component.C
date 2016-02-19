@@ -17,7 +17,7 @@
 #include "Chains/Root.h"
 
 ifstream Component::matLib;
-ifstream Component::eleLib;
+std::map<std::string, Component::EleLibEntry> Component::eleLib;
 
 /***************************
  ********* Service *********
@@ -26,7 +26,7 @@ ifstream Component::eleLib;
     are given.  Otherwise, it sets the type, the name and the density.
     The 'next' element is initialized to NULL. */
 Component::Component(int compType, std::string name, double dens, double volFrac) :
-  type(compType),compName(name),density(dens), volFraction(volFrac)
+  type(compType),density(dens), volFraction(volFrac),compName(name)
 {}
 
 
@@ -76,7 +76,7 @@ Component* Component::getComponent(int setType,istream &input, Mixture *mixPtr)
   memCheck(next,"Component::getComponent(...) : next");
 
   verbose(3,"type code: %d name: %s, density %g, volume fraction: %g",
-	  setType,name,dens,volFrac);
+          setType,name.c_str(),dens,volFrac);
 
   mixPtr->incrVolFrac(volFrac);
 
@@ -84,7 +84,7 @@ Component* Component::getComponent(int setType,istream &input, Mixture *mixPtr)
 
 }
 
-void Component::getMatlib(istream& input)
+void Component::getMatLib(istream& input)
 {
   std::string fname;
   input >> fname;
@@ -100,12 +100,37 @@ void Component::getEleLib(istream& input)
 {
   std::string fname;
   input >> fname;
-  eleLib.open(searchNonXSPath(fname.c_str()));
+  ifstream eleLibFile;
 
-  if (eleLib == 0)
+  eleLibFile.open(searchNonXSPath(fname.c_str()));
+
+  if (eleLibFile == 0)
     error(110,"Unable to open element library: %s",fname.c_str());
 
   verbose(2,"Openned element library %s",searchNonXSPath(fname.c_str()));
+
+  std::string eleKey;
+  Component::EleLibEntry blank_element;
+  std::pair<std::string,double> isoInfo;
+
+  while (!eleLibFile.eof())
+    {
+      clearComment(eleLibFile);
+      eleLibFile >> eleKey;
+      eleLib[eleKey] = blank_element;
+      eleLibFile >>  eleLib[eleKey].A >> eleLib[eleKey].Z 
+                 >> eleLib[eleKey].density >> eleLib[eleKey].numIsos;
+      int numIsos = eleLib[eleKey].numIsos;
+      while (numIsos-->0)
+        {
+          clearComment(eleLibFile);
+          eleLibFile >> isoInfo.first >> isoInfo.second;
+          eleLib[eleKey].isoList.push_back(isoInfo);
+        }
+    }
+ 
+  eleLibFile.close();
+ 
 }
 
 
@@ -165,7 +190,7 @@ Root* Component::expand(Mixture *mix)
 	  compRootList = ptr->expandMat(mix);
 	  rootList = rootList->merge(compRootList);
 	  verbose(6,"Merged material %s into rootList for mixture",
-		  ptr->compName);
+              ptr->compName.c_str());
 	  delete compRootList;
 	  break;
 	case COMP_ELE:
@@ -173,16 +198,16 @@ Root* Component::expand(Mixture *mix)
 	  compRootList = ptr->expandEle(mix,ptr);
 	  rootList = rootList->merge(compRootList);
 	  verbose(6,"Merged element %s into rootList for mixture",
-		  ptr->compName);
+              ptr->compName.c_str());
 	  delete compRootList;
 	  break;
 //	case COMP_ISO:
 	case TARGET_ISO:
-	  Root* newRoot = new Root(ptr->compName,ptr->density,mix,ptr);
+	  Root* newRoot = new Root(ptr->compName.c_str(),ptr->density,mix,ptr);
 	  memCheck(newRoot,"Component::expand(...) : newRoot");
 	  rootList = rootList->merge(newRoot);
 	  verbose(6,"Merged isotope %s into rootList for mixture",
-		  ptr->compName);
+              ptr->compName.c_str());
 	  delete newRoot;
 	  break;
 	}
@@ -201,70 +226,42 @@ Root* Component::expandEle(Mixture* mix, Component* comp)
 {
   Root *rootList = new Root;
   memCheck(rootList,"Component::expandEle(...) : rootList");
-  int numIsos, Z, eleNameLen;
-  char testName[64],isoName[64];
-  double isoDens, eleDens, A;
 
-  /* rewind the element library */
-  eleLib.seekg(0L,ios::beg);
+  verbose(4,"Expanding element %s",compName.c_str());
 
-  verbose(4,"Expanding element %s",compName);
-
-  /* Extract the standard element name from the potentially
-   * fabricated name.  e.g. enriched Li might be li:90 */
-  eleNameLen = strchr(compName,':')-compName;
-  if (eleNameLen <= 0) eleNameLen = strlen(compName);
-
-  /* search for this element */
-  clearComment(eleLib);
-  eleLib >> testName >> A >> Z >> eleDens >> numIsos;
-  while (strcmp(testName,compName) && !eleLib.eof())
+  if (eleLib.count(compName) != 0)
     {
-      verbose(5,"Skipping element %s in element library",testName);
-      while (numIsos-->0)
-	{
-	  clearComment(eleLib);
-	  eleLib >> isoName >> isoDens;
-	}
-      clearComment(eleLib);
-      eleLib >> testName >> A >> Z >> eleDens >> numIsos;
-    }
+      Component::EleLibEntry ele = eleLib[compName];
       
-  if (!eleLib.eof())
-    {
       if (density >= 0)
-	density *= eleDens;
+        density *= ele.density;
       else
-	density = -density;
-
-      double Ndensity = volFraction * density * AVAGADRO/A;
+        density = -density;
+      
+      double Ndensity = volFraction * density * AVAGADRO/ele.A;
       mix->incrTotalDensity(density*volFraction);
-
+      
       /* if element is found, add a new root for each isotope */
       verbose(5,"Found element %s with %d isotopes in element library",
-	      testName, numIsos);
-
-      while (numIsos-->0)
-	{
-	  clearComment(eleLib);
-	  eleLib >> isoName >> isoDens;
-	  isoDens *= Ndensity/100.0;
-	  strncpy(testName,compName,eleNameLen);
-	  testName[eleNameLen] = '\0';
-	  strcat(testName,"-");
-	  strcat(testName,isoName);
-	  Root* newRoot = new Root(testName,isoDens,mix,comp);
-	  memCheck(newRoot,"Component::expandEle(...) : newRoot");
-	  rootList = rootList->merge(newRoot);
-	  verbose(6,"Merged isotope %s into rootList for element %s",
-		  testName,compName);
-	  debug(5,"Accounted for isotope %s in Root List",testName);
-	  delete newRoot;
-	}
+              compName.c_str(), ele.numIsos);
+      
+      for (std::vector<std::pair<std::string,double> >::iterator iso = ele.isoList.begin();
+           iso != ele.isoList.end();
+           iso++)
+        {
+          std::string isoName = compName.substr(compName.find(':')) + '-' + iso->first;
+          Root* newRoot = new Root(isoName.c_str(),iso->second*Ndensity/100.0,mix,comp);
+          memCheck(newRoot,"Component::expandEle(...) : newRoot");
+          rootList = rootList->merge(newRoot);
+          verbose(6,"Merged isotope %s into rootList for element %s",
+                  isoName.c_str(),compName.c_str());
+          debug(5,"Accounted for isotope %s in Root List",isoName.c_str());
+          delete newRoot;
+        }
     }
   else
-    error(310,"Could not find element %s in element library.",compName);
-
+    error(310,"Could not find element %s in element library.",compName.c_str());
+  
   return rootList;
 
 }
@@ -286,12 +283,12 @@ Root* Component::expandMat(Mixture* mix)
   /* rewind the material library */
   matLib.seekg(0L,ios::beg);
 
-  verbose(4,"Expanding material %s",compName);
+  verbose(4,"Expanding material %s",compName.c_str());
 
   /* search for this material */
   clearComment(matLib);
   matLib >> testName >> matDens >> numEles;
-  while (strcmp(testName,compName) && !matLib.eof())
+  while (strcmp(testName,compName.c_str()) && !matLib.eof())
     {
       verbose(5,"Skipping material %s in material library.",testName);
       while (numEles-->0)
@@ -322,13 +319,13 @@ Root* Component::expandMat(Mixture* mix)
 	  rootList = rootList->merge(elementRootList);
 	  delete elementRootList;
 	  verbose(6,"Merged element %s into rootList for material %s",
-		  eleName,compName);
+              eleName,compName.c_str());
 	  delete element;
 	}
     }
   else
     error(311,"Could not find material %s in material library.",
-	  compName);
+          compName.c_str());
   
   return rootList;
 }

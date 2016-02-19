@@ -48,7 +48,7 @@ Root::Root(Root* cpyRoot, Root* nxtPtr) :
   mixList = new MixCompRef(*(cpyRoot->mixList));
 }
 
-Root::Root(char* isoName, double isoDens, Mixture* mix,Component* comp) :
+Root::Root(const char* isoName, double isoDens, Mixture* mix,Component* comp) :
   Node(isoName)
 {
   mixList = new MixCompRef(mix,comp,isoDens);

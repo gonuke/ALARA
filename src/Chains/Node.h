@@ -58,7 +58,7 @@ protected:
 
 public:
   /// The default constructor when called with no arguments
-  Node(char* isoName=NULL);
+  Node(const char* isoName=NULL);
   
   /// This constructor invokes an initialization list.
   Node(int,Node*,double*,int,int);

@@ -32,7 +32,7 @@ DataCache Node::wdrCache;
       Otherwise, it processes the isotope name passed as the
           argument and converts it to a KZA number.  Default
           constructors are used for the base class. */
-Node::Node(char *isoName)
+Node::Node(const char *isoName)
 {
 
   kza = 0;
