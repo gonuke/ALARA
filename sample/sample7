@@ -52,10 +52,18 @@ flux flux_2   data/fluxin2	1.0 	0	default
 
 flux flux_3   data/fluxin3	1.0 	0	default
 
+# this is a simple schedule consisting of one pulse of duration 5 s
+# repeated twice (double_pulse) with 10 s between each pulse (double_pulse)
 Schedule sub_1
 	5 s	  flux_2   double_pulse      0  s
 end
 
+# this is a complex schedule consisting of:
+#   one pulse of duration 10 s at flux specturm/level flux_1 followed by a 12 s delay
+#   one pulse of duration 10 s at flux specturm/level flux_2 followed by a 3 s delay
+#   one pulse of duration 10 s at flux specturm/level flux_3 followed by a 5 s delay
+#   three repetitions (triple_pulse) of the simple schedule sub_1,
+#                 with 100 s between each repetition (triple_pulse)
 Schedule myschedule
 	10  s	  flux_1   single_pulse     12  s
 	10  s     flux_2   single_pulse      3  s
