@@ -52,6 +52,7 @@ _______
 4. Create a directory to build ALARA & change to that directory
 
    %> mkdir build
+
    %> cd build
 
 5. Configure ALARA for your system
