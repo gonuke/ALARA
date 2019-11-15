@@ -51,9 +51,8 @@ _______
 
 4. Create a directory to build ALARA & change to that directory
 
-   %> mkdir build
-
-   %> cd build
+| %> mkdir build
+| %> cd build
 
 5. Configure ALARA for your system
 
@@ -73,7 +72,7 @@ Configuration Options
 ____________________
 The configure program provides a lot of options for customizing the compilation and installation of ALARA. To learn more about the full set of options, you should check the built-in help:
 
-	%> ./configure --help
+	%> ../configure --help
 
 Some common options are listed here:
 
